@@ -12,7 +12,8 @@ def init_db():
             date DATE NOT NULL,
             name TEXT NOT NULL,
             description TEXT,
-            is_public BOOLEAN DEFAULT 1
+            is_public BOOLEAN DEFAULT 1,
+            UNIQUE(date, name)
         )
     ''')
     
@@ -36,7 +37,7 @@ def get_holidays_by_month(month, year):
     conn = sqlite3.connect('holidays.db')
     c = conn.cursor()
     c.execute('''
-        SELECT date, name, description 
+        SELECT DISTINCT date, name, description 
         FROM holidays 
         WHERE strftime("%m", date) = ? AND strftime("%Y", date) = ?
         ORDER BY date
