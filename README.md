@@ -1,64 +1,65 @@
-# PDF Chat Assistant
+# Chat with PDF Application
 
-A web application that allows users to chat with their PDF documents and query holiday information.
+This application allows users to chat with PDF documents using a local LLM (Mistral-7B) and provides holiday information through a SQLite database.
 
-## Setup Instructions
+## Features
 
-1. Clone the repository:
-```bash
-git clone https://github.com/<your-github-username>/pdf-chat-assistant.git
-cd pdf-chat-assistant
-```
+- Chat with PDF documents using Mistral-7B model
+- Holiday information lookup
+- Simple and intuitive web interface
 
-2. Create a virtual environment:
+## Deployment on Hugging Face Spaces
+
+This application is configured to run on Hugging Face Spaces using Docker. To deploy:
+
+1. Create a new Space on Hugging Face
+2. Choose "Docker" as the SDK
+3. Push your code to the Space repository
+4. The application will automatically build and deploy
+
+The application will be available at your Hugging Face Space URL.
+
+## Local Development
+
+1. Create a virtual environment:
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-3. Install dependencies:
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Download required files:
-   - Download the Mistral model from [here](https://huggingface.co/TheBloke/Mistral-7B-OpenOrca-GGUF/resolve/main/mistral-7b-openorca.Q4_0.gguf)
-   - Place it in the project root directory
-   - Add your PDF files to the project root directory
-
-5. Run the application:
+3. Run the application:
 ```bash
 python app.py
 ```
 
-6. Open your browser and go to:
-```
-http://localhost:5000
-```
-
-## Features
-
-- Chat with PDF documents
-- Query holiday information
-- Support for multiple PDFs
-- Modern web interface
-- Holiday database with public and cultural holidays
-
-## Deployment
-
-This application is configured for deployment on Render.com. Follow these steps:
-
-1. Create a Render.com account
-2. Create a new Web Service
-3. Connect your GitHub repository
-4. Deploy!
+4. Access the application at `http://localhost:7860`
 
 ## Environment Variables
 
 Create a `.env` file with the following variables:
 ```
-FLASK_APP=app.py
-FLASK_ENV=production
-PYTHON_VERSION=3.9.0
-MODEL_PATH=./mistral-7b-openorca.Q4_0.gguf
-``` 
+MODEL_PATH=path/to/your/model.gguf
+```
+
+## Project Structure
+
+- `app.py`: Main Flask application
+- `main.py`: LLM chain initialization and PDF processing
+- `holiday_db.py`: Holiday database operations
+- `index.html`: Web interface
+- `Dockerfile`: Docker configuration for Hugging Face Spaces
+- `requirements.txt`: Python dependencies
+
+## Dependencies
+
+- Flask
+- LangChain
+- Llama-cpp-python
+- PyPDF2
+- SQLite3
+- Other dependencies listed in requirements.txt 
