@@ -13,29 +13,65 @@ CORS(app)
 answer_gen_chain = initialize_chain()
 
 def process_holiday_query(question):
-    # Check for specific date query (e.g., "is jan 1 2025 holiday")
-    date_pattern = r'(?:is\s+)?(\w+)\s+(\d{1,2})(?:\s+(\d{4}))?\s+holiday'
-    date_match = re.search(date_pattern, question.lower())
-    if date_match:
-        month, day, year = date_match.groups()
-        year = year or datetime.now().year
-        try:
-            date = datetime.strptime(f"{year}-{month[:3]}-{day}", "%Y-%b-%d")
-            holiday = is_holiday(date.strftime("%Y-%m-%d"))
-            if holiday:
-                return f"Yes, {date.strftime('%B %d, %Y')} is {holiday[0]}. {holiday[1]}"
-            return f"No, {date.strftime('%B %d, %Y')} is not a holiday."
-        except ValueError:
-            return "I couldn't understand the date format. Please try again."
+    q = question.lower().strip()
+    # 1. Check for year query (e.g., "holidays in 2025", "holidays in 24")
+    year_pattern = r'holidays\s+in\s+(\d{2,4})'
+    year_match = re.search(year_pattern, q)
+    if year_match:
+        year = year_match.group(1)
+        if len(year) == 2:
+            year = '20' + year  # assume 20xx for 2-digit years
+        holidays = get_holidays_by_year(year)
+        if holidays:
+            response = f"Holidays in {year}:\n"
+            for date, name, desc in holidays:
+                response += f"- {datetime.strptime(date, '%Y-%m-%d').strftime('%d %B')}: {name}\n"
+            return response
+        return f"No holidays found in {year}"
 
-    # Check for month query (e.g., "holidays in jan")
-    month_pattern = r'holidays\s+in\s+(\w+)(?:\s+(\d{4}))?'
-    month_match = re.search(month_pattern, question.lower())
+    # 2. Check for month+year queries (e.g., "holidays in jan 2024", "holidays in 2024 jan")
+    month_year_patterns = [
+        r'holidays\s+in\s+(\w+)\s+(\d{2,4})',  # holidays in jan 2024
+        r'holidays\s+in\s+(\d{2,4})\s+(\w+)'   # holidays in 2024 jan
+    ]
+    for pat in month_year_patterns:
+        match = re.search(pat, q)
+        if match:
+            m, y = match.groups()
+            # Try to parse which is month and which is year
+            if m.isdigit():
+                year = m if len(m) == 4 else '20' + m
+                month = y
+            else:
+                year = y if len(y) == 4 else '20' + y if len(y) == 2 else y
+                month = m
+            try:
+                # Accept both numeric and string months
+                if month.isdigit():
+                    month_num = int(month)
+                else:
+                    month_num = datetime.strptime(month[:3], "%b").month
+                holidays = get_holidays_by_month(month_num, year)
+                if holidays:
+                    response = f"Holidays in {month.capitalize()} {year}:\n"
+                    for date, name, desc in holidays:
+                        response += f"- {datetime.strptime(date, '%Y-%m-%d').strftime('%d %B')}: {name}\n"
+                    return response
+                return f"No holidays found in {month.capitalize()} {year}"
+            except ValueError:
+                return "I couldn't understand the month format. Please try again."
+
+    # 3. Check for month-only queries (e.g., "holidays in jan", "holidays in 1")
+    month_pattern = r'holidays\s+in\s+(\w+)'
+    month_match = re.search(month_pattern, q)
     if month_match:
-        month, year = month_match.groups()
-        year = year or datetime.now().year
+        month = month_match.group(1)
+        year = datetime.now().year
         try:
-            month_num = datetime.strptime(month[:3], "%b").month
+            if month.isdigit():
+                month_num = int(month)
+            else:
+                month_num = datetime.strptime(month[:3], "%b").month
             holidays = get_holidays_by_month(month_num, year)
             if holidays:
                 response = f"Holidays in {month.capitalize()} {year}:\n"
@@ -46,18 +82,41 @@ def process_holiday_query(question):
         except ValueError:
             return "I couldn't understand the month format. Please try again."
 
-    # Check for year query (e.g., "holidays in 2025")
-    year_pattern = r'holidays\s+in\s+(\d{4})'
-    year_match = re.search(year_pattern, question.lower())
-    if year_match:
-        year = year_match.group(1)
-        holidays = get_holidays_by_year(year)
-        if holidays:
-            response = f"Holidays in {year}:\n"
-            for date, name, desc in holidays:
-                response += f"- {datetime.strptime(date, '%Y-%m-%d').strftime('%d %B')}: {name}\n"
-            return response
-        return f"No holidays found in {year}"
+    # 4. Check for specific date queries (e.g., "is jan 1 2025 holiday", "is 1 jan 2025 holiday", "is 1-1-2024 holiday")
+    date_patterns = [
+        r'(?:is\s+)?(\w+)\s+(\d{1,2})(?:\s+(\d{2,4}))?\s+holiday',  # is jan 1 2025 holiday
+        r'(?:is\s+)?(\d{1,2})\s+(\w+)(?:\s+(\d{2,4}))?\s+holiday',  # is 1 jan 2025 holiday
+        r'(?:is\s+)?(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})\s+holiday'    # is 1-1-2024 holiday
+    ]
+    for pat in date_patterns:
+        match = re.search(pat, q)
+        if match:
+            g = match.groups()
+            try:
+                if len(g) == 3:
+                    if pat.startswith(r'(?:is\s+)?(\w+)'):
+                        # jan 1 2025
+                        month, day, year = g
+                    elif pat.startswith(r'(?:is\s+)?(\d{1,2})\s+(\w+)'):
+                        # 1 jan 2025
+                        day, month, year = g
+                    else:
+                        # 1-1-2024
+                        day, month, year = g
+                    year = year or str(datetime.now().year)
+                    if len(year) == 2:
+                        year = '20' + year
+                    if month.isdigit():
+                        month_num = int(month)
+                    else:
+                        month_num = datetime.strptime(month[:3], "%b").month
+                    date = datetime(int(year), int(month_num), int(day))
+                    holiday = is_holiday(date.strftime("%Y-%m-%d"))
+                    if holiday:
+                        return f"Yes, {date.strftime('%B %d, %Y')} is {holiday[0]}. {holiday[1]}"
+                    return f"No, {date.strftime('%B %d, %Y')} is not a holiday."
+            except Exception:
+                return "I couldn't understand the date format. Please try again."
 
     return None
 
