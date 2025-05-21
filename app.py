@@ -67,30 +67,39 @@ def serve_index():
 
 @app.route('/ask', methods=['POST'])
 def ask():
+    print("ASK endpoint called")
     data = request.json
+    print("Request data:", data)
     question = data.get('question', '')
+    print("Question:", question)
     
     if not question:
+        print("No question provided")
         return jsonify({'error': 'No question provided'}), 400
     
     try:
-        # First check if it's a holiday query
+        print("Checking for holiday query...")
         holiday_response = process_holiday_query(question)
         if holiday_response:
+            print("Holiday response found:", holiday_response)
             return jsonify({
                 'answer': holiday_response,
                 'sources': ['Holiday Database']
             })
         
-        # If not a holiday query, use the LLM
+        print("Invoking answer_gen_chain...")
         result = answer_gen_chain.invoke({"question": question})
+        print("Result:", result)
         return jsonify({
             'answer': result['answer'],
             'sources': [doc.metadata.get('source', 'Unknown') for doc in result.get('source_documents', [])]
         })
     except Exception as e:
+        import traceback
+        print("Error:", e)
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 7860))
-    app.run(host='0.0.0.0', port=port, debug=False) 
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False) 

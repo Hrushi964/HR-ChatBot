@@ -8,16 +8,18 @@ This application allows users to chat with PDF documents using a local LLM (Mist
 - Holiday information lookup
 - Simple and intuitive web interface
 
-## Deployment on Hugging Face Spaces
+## Deployment on Replit
 
-This application is configured to run on Hugging Face Spaces using Docker. To deploy:
+This application is configured to run on Replit. To deploy:
 
-1. Create a new Space on Hugging Face
-2. Choose "Docker" as the SDK
-3. Push your code to the Space repository
-4. The application will automatically build and deploy
+1. Create a new Repl on Replit.com
+2. Choose "Python" as your template
+3. Import your code into the Repl
+4. Add your environment variables in the Replit Secrets tab:
+   - `MODEL_PATH`: Path to your model file
+5. Click "Run" to start the application
 
-The application will be available at your Hugging Face Space URL.
+The application will be available at your Replit URL.
 
 ## Local Development
 
@@ -37,7 +39,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-4. Access the application at `http://localhost:7860`
+4. Access the application at `http://localhost:8080`
 
 ## Environment Variables
 
@@ -52,7 +54,7 @@ MODEL_PATH=path/to/your/model.gguf
 - `main.py`: LLM chain initialization and PDF processing
 - `holiday_db.py`: Holiday database operations
 - `index.html`: Web interface
-- `Dockerfile`: Docker configuration for Hugging Face Spaces
+- `.replit`: Replit configuration file
 - `requirements.txt`: Python dependencies
 
 ## Dependencies
